@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bilingual Notification Composer — English + Arabic</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#0f172a; --muted:#94a3b8; --text:#e2e8f0; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --border:#1f2937; --shadow:0 10px 30px rgba(0,0,0,.25);
+      --radius:16px;
+    }
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Dubai", "Noto Naskh Arabic", "Geeza Pro", Tahoma, sans-serif;}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    h1{font-size:22px;margin:0 0 6px}
+    .sub{color:var(--muted);margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:960px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card h2{margin:0;padding:14px 16px;border-bottom:1px solid var(--border);font-size:16px}
+    .card .body{padding:14px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    label{font-size:12px;color:var(--muted)}
+    textarea, .out{width:100%;min-height:180px;background:#0b1020;border:1px solid var(--border);color:var(--text);padding:12px;border-radius:12px;box-sizing:border-box}
+    textarea:focus{outline:2px solid var(--accent);}
+    /* Bidi-safe editors */
+    .bidi-textarea{direction:auto; unicode-bidi:plaintext; white-space:pre-wrap;}
+    .ltr{direction:ltr}
+    .rtl{direction:rtl}
+    .btn{appearance:none;border:1px solid var(--border);background:#0b1020;color:var(--text);padding:8px 12px;border-radius:999px;cursor:pointer}
+    .btn:hover{border-color:#334155}
+    .btn.primary{background:var(--accent);border-color:transparent;color:#001018}
+    .btn.ok{background:var(--ok);color:#00160a;border-color:transparent}
+    .btn.warn{background:var(--warn);color:#1d1200;border-color:transparent}
+    .btn.bad{background:var(--bad);color:#190404;border-color:transparent}
+    .muted{color:var(--muted)}
+    .out{white-space:pre-wrap}
+    .preview{border:1px dashed #334155;padding:12px;border-radius:12px;background:#0b1020}
+    .kpis{display:flex;gap:10px;flex-wrap:wrap}
+    .k{font-size:12px;color:var(--muted)}
+    .k code{color:var(--text);background:#0b1020;border:1px solid var(--border);padding:2px 6px;border-radius:8px}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#0b1020}
+    .tip{font-size:12px;color:var(--muted)}
+    .diag{font-size:12px;color:var(--muted);margin-top:8px}
+    .testlog{font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0b1020;border:1px solid var(--border);border-radius:12px;padding:10px;max-height:220px;overflow:auto}
+    .pass{color:#22c55e}
+    .fail{color:#ef4444}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>📨 Bilingual Notification Composer (EN + AR)</h1>
+    <div class="sub">Compose English + العربية together with safe direction handling. Copy operations now degrade gracefully in sandboxed environments (no Clipboard API required).</div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Unified editor (auto‑direction)</h2>
+        <div class="body">
+          <div class="row" style="justify-content:space-between">
+            <div class="kpis">
+              <div class="k">Direction: <code>auto</code></div>
+              <div class="k">Bidi mode: <code>unicode-bidi: plaintext</code></div>
+              <div class="k">Preserve spaces/lines: <code>pre-wrap</code></div>
+            </div>
+            <div class="chips">
+              <span class="chip">EN ← LTR</span>
+              <span class="chip">AR → RTL</span>
+              <span class="chip">Mix safely</span>
+            </div>
+          </div>
+          <textarea id="unified" class="bidi-textarea" placeholder="Type or paste your mixed English + العربية message here...&#10;Example:&#10;Dear Customer, your balance is ready.&#10;عزيزي العميل، رصيدك جاهز.&#10;Ref: ABC-123 | المرجع: ABC-123"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" onclick="insertMarker('\u200E')" title="Left-to-Right Mark">Insert LRM ‎</button>
+            <button class="btn" onclick="insertMarker('\u200F')" title="Right-to-Left Mark">Insert RLM ‏</button>
+            <span class="tip">Use these if numbers or punctuation look reversed around Arabic text.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2) Optional split editors (force directions)</h2>
+        <div class="body">
+          <label>English (forced LTR)</label>
+          <textarea id="en" class="bidi-textarea ltr" placeholder="English message here..."></textarea>
+          <label style="margin-top:8px">العربية (إتجاه RTL)</label>
+          <textarea id="ar" class="bidi-textarea rtl" placeholder="اكتب الرسالة العربية هنا..."></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" onclick="mergeSplit()">Merge EN + AR → Unified</button>
+            <button class="btn" onclick="clearSplit()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>3) Result — combined output</h2>
+        <div class="body">
+          <div class="row">
+            <button class="btn primary" onclick="buildOutput()">Build result (auto paragraphs)</button>
+            <button class="btn ok" onclick="copyPlain()">Copy / Select Plain</button>
+            <button class="btn warn" onclick="copyHtml()">Copy / Select HTML</button>
+            <button class="btn" onclick="downloadPlain()">Download .txt</button>
+            <button class="btn" onclick="downloadHtml()">Download .html</button>
+            <button class="btn" onclick="resetAll()">Reset</button>
+          </div>
+
+          <p class="tip" style="margin-top:8px">Preview renders each line with <code>&lt;p dir="auto"&gt;</code> so English lines are LTR and Arabic lines are RTL automatically.</p>
+
+          <div id="preview" class="preview" aria-live="polite"></div>
+
+          <h3 style="margin:12px 0 6px;font-size:14px;color:var(--muted)">Raw HTML</h3>
+          <textarea id="htmlOut" class="out" readonly></textarea>
+
+          <div class="diag" id="diag"></div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>4) Built-in tests</h2>
+        <div class="body">
+          <div class="row">
+            <button class="btn" onclick="runTests()">Run tests</button>
+            <span class="tip">Quick checks for escaping, paragraph building, merge order, and cursor insert.</span>
+          </div>
+          <div id="testlog" class="testlog" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Tips for perfect EN/AR messages</h2>
+        <div class="body">
+          <ul>
+            <li>Prefer this editor’s output over manual styling. It adds semantic <code>dir="auto"</code> which many inboxes and browsers respect.</li>
+            <li>If mixed numbers/punctuation look wrong next to Arabic, insert invisible <em>direction marks</em>: LRM (‎) or RLM (‏).</li>
+            <li>Use monospaced references carefully (IDs like <code>ABC-123</code>). If they appear mirrored in Arabic context, place an LRM before and after.</li>
+            <li>When sending via APIs, keep the <code>&lt;meta charset="utf-8"&gt;</code> and ensure your transport is UTF‑8; avoid legacy encodings.</li>
+            <li>In HTML emails, set container style: <code>white-space: pre-wrap;</code> to preserve user line breaks.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+
+    function insertAtCursor(el, text){
+      const [start, end] = [el.selectionStart ?? 0, el.selectionEnd ?? 0];
+      const val = el.value ?? '';
+      el.value = val.slice(0,start) + text + val.slice(end);
+      el.selectionStart = el.selectionEnd = start + text.length;
+      el.dispatchEvent(new Event('input'));
+      el.focus();
+    }
+
+    function insertMarker(mark){ insertAtCursor($('#unified'), mark); }
+
+    function mergeSplit(){
+      const en = ($('#en').value || '').trim();
+      const ar = ($('#ar').value || '').trim();
+      const joined = [en, ar].filter(Boolean).join('\n');
+      $('#unified').value = joined;
+      buildOutput();
+    }
+
+    function clearSplit(){ $('#en').value = ''; $('#ar').value = ''; }
+
+    function resetAll(){
+      ['#unified','#en','#ar','#htmlOut','#preview','#testlog'].forEach(id=>{
+        const el = $(id);
+        if(!el) return;
+        if(el.tagName === 'TEXTAREA'){ el.value=''; }
+        else { el.innerHTML=''; }
+      });
+      showDiagnostics();
+    }
+
+    function escapeHtml(s){
+      return (s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    function buildOutput(){
+      const raw = ($('#unified').value || '').replace(/\r\n?/g,'\n');
+      const lines = raw.split('\n');
+      const paras = lines.map(line => {
+        const safe = escapeHtml(line);
+        return `<p dir="auto">${safe || '&nbsp;'}</p>`;
+      }).join('\n');
+
+      $('#htmlOut').value = paras;
+      $('#preview').innerHTML = `<div style="direction:auto; unicode-bidi:plaintext; white-space:pre-wrap; font-size:16px; line-height:1.6">${paras}</div>`;
+    }
+
+    // ---- Clipboard-safe helpers (no hard dependency on navigator.clipboard) ----
+    async function copyToClipboard(text, fallbackEl){
+      // Try modern API if allowed
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          flash('Copied to clipboard');
+          return true;
+        } catch (e) {
+          console.warn('Clipboard API blocked or failed:', e);
+        }
+      }
+      // Try legacy execCommand
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly','');
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, ta.value.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { flash('Copied'); return true; }
+      } catch (e) { console.warn('execCommand copy failed:', e); }
+
+      // Final fallback: select text for the user and instruct manual copy
+      if (fallbackEl && typeof fallbackEl.select === 'function') {
+        fallbackEl.focus(); fallbackEl.select();
+      }
+      flash('Clipboard blocked — text selected; press Ctrl/Cmd+C');
+      return false;
+    }
+
+    async function copyPlain(){
+      const raw = $('#unified').value || '';
+      await copyToClipboard(raw, $('#unified'));
+    }
+
+    async function copyHtml(){
+      const html = $('#htmlOut').value || (buildOutput(), $('#htmlOut').value);
+      await copyToClipboard(html, $('#htmlOut'));
+    }
+
+    function downloadText(filename, content){
+      const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+    }
+
+    function downloadPlain(){ downloadText('message.txt', $('#unified').value || ''); }
+    function downloadHtml(){
+      const html = $('#htmlOut').value || (buildOutput(), $('#htmlOut').value);
+      downloadText('message.html', html);
+    }
+
+    function flash(msg, kind='ok'){
+      const b = document.createElement('div');
+      b.textContent = msg;
+      b.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#16a34a;color:#00160a;padding:10px 14px;border-radius:999px;box-shadow:var(--shadow);z-index:9999';
+      if(kind==='bad'){ b.style.background = 'var(--bad)'; b.style.color='#190404'; }
+      if(kind==='warn'){ b.style.background = 'var(--warn)'; b.style.color='#1d1200'; }
+      document.body.appendChild(b);
+      setTimeout(()=>b.remove(), 1600);
+    }
+
+    function showDiagnostics(){
+      const diag = $('#diag');
+      const hasClipboard = !!navigator.clipboard;
+      const secure = !!window.isSecureContext;
+      diag.innerHTML = `Environment: clipboard API <code>${hasClipboard? 'present' : 'absent'}</code> · secure context <code>${secure? 'yes':'no'}</code>. If copy fails, this page will select the text for manual copy or let you download it.`;
+    }
+
+    // ---- Minimal in-page test harness ----
+    function logTest(name, pass, got, want){
+      const el = document.createElement('div');
+      el.innerHTML = `${pass? '✅ <span class="pass">PASS' : '❌ <span class="fail">FAIL'}:</span> <strong>${escapeHtml(name)}</strong>` + (pass? '' : `<div>got: <code>${escapeHtml(String(got))}</code></div><div>want: <code>${escapeHtml(String(want))}</code></div>`);
+      $('#testlog').appendChild(el);
+    }
+
+    function clearTests(){ $('#testlog').innerHTML=''; }
+
+    function runTests(){
+      clearTests();
+      // Test 1: escapeHtml
+      logTest('escapeHtml <>&', escapeHtml('<>&') === '&lt;&gt;&amp;', escapeHtml('<>&'), '&lt;&gt;&amp;');
+
+      // Test 2: buildOutput paragraph wrapping
+      const tmp = $('#unified');
+      const prev = tmp.value;
+      tmp.value = 'Hello\nعربي';
+      buildOutput();
+      const got2 = $('#htmlOut').value.trim();
+      const want2 = '<p dir="auto">Hello</p>\n<p dir="auto">عربي</p>';
+      logTest('buildOutput wraps lines into <p dir="auto">', got2 === want2, got2, want2);
+      tmp.value = prev; buildOutput();
+
+      // Test 3: mergeSplit order
+      const prevEN = $('#en').value, prevAR = $('#ar').value;
+      $('#en').value = 'Account ready';
+      $('#ar').value = 'جاهز';
+      mergeSplit();
+      logTest('mergeSplit EN then AR join with newline', $('#unified').value === 'Account ready\nجاهز', $('#unified').value, 'Account ready\nجاهز');
+      $('#en').value = prevEN; $('#ar').value = prevAR; // restore
+
+      // Test 4: insertAtCursor
+      const ta = document.createElement('textarea');
+      ta.value = 'ABC'; ta.selectionStart = 1; ta.selectionEnd = 1;
+      insertAtCursor(ta, 'X');
+      logTest('insertAtCursor inserts at caret', ta.value === 'AXBC', ta.value, 'AXBC');
+
+      flash('Tests completed');
+    }
+
+    // Init
+    showDiagnostics();
+  </script>
+</body>
+</html>
